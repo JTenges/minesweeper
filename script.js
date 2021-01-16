@@ -1,74 +1,92 @@
 // Logic for minesweeper
 
-class Minefield {
-    constructor() {
-        this.minefield = null;
-        this.minefieldView = null;
-        this.width = null;
-        this.height = null;
-    }
+class Cell {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
 
-    createMinefieldView(width, height) {
-        this.minefieldView = [];
+        this.mine = false;
+        this.adjacentMines = 0;
+        this.visible = false;
+        this.flagged = false;
+    }
+}
+
+class CellBoard {
+    constructor(width, height) {
         this.width = width;
         this.height = height;
 
+        this.board = [];
         let row;
-        // Create cells
-        for (let x = 0; x < width; x++) {
+        for (let x = 0; x < this.width; x++) {
             row = [];
-            for (let y = 0; y < height; y++) {
-                row.push(false);
+            for (let y = 0; y < this.height; y++) {
+                row.push(new Cell(x, y));
             }
-            this.minefieldView.push(row);
+            this.board.push(row);
         }
     }
 
-    validCell(x, y) {
+    validPosition(x, y) {
         return  x >= 0 &&
-            x < this.minefieldView.length &&
+            x < this.width &&
             y >= 0 &&
-            y < this.minefieldView[x].length
+            y < this.height;
     }
 
-    /**
-     * Takes width and height of the fields as well as the
-     * first cell clicked, and number of mines.
-     *
-     * true cells contain mines
-     * a number indicates the number of mines adjacent
-     */
-    createMinefield(width, height, firstX, firstY, numMines) {
-        let row;
+    getCell(x, y) {
+        return this.board[x][y];
+    }
 
-        this.minefield = [];
-
-        // Create cells
-        for (let x = 0; x < width; x++) {
-            row = [];
-            for (let y = 0; y < height; y++) {
-                row.push(0);
+    *allCells() {
+        for (let x = 0; x < this.width; x++) {
+            for (let y = 0; y < this.height; y++) {
+                yield this.getCell(x, y);
             }
-            this.minefield.push(row);
         }
+    }
 
+    [Symbol.iterator]() {
+        return this.allCells();
+    }
+
+    *adjacentCells(x, y) {
+        for (let adjX = x - 1; adjX <= x + 1; adjX++) {
+            for (let adjY = y - 1; adjY <= y + 1; adjY++) {
+                if (this.validPosition(adjX, adjY)) {
+                    yield this.getCell(adjX, adjY);
+                }
+            }
+        }
+    }
+
+    resize(width, height) {
+        //TODO
+    }
+}
+
+class Minefield {
+    constructor() {
+        this.cellBoard = new CellBoard(20, 20);
+
+        this.started = false;
+    }
+
+    setMines(firstX, firstY, numMines) {
         // Create mines
         let i = 0;
         let x;
         let y;
         while (i < numMines) {
-            x = Math.floor(Math.random() * width);
-            y = Math.floor(Math.random() * height);
+            x = Math.floor(Math.random() * this.cellBoard.width);
+            y = Math.floor(Math.random() * this.cellBoard.height);
             if (x !== firstX && y !== firstY) {
-                this.minefield[x][y] = true;
+                this.cellBoard.getCell(x, y).mine = true;
 
                 // Increment adjacent cells' mine count
-                for (let adjX = x - 1; adjX <= x + 1; adjX++) {
-                    for (let adjY = y - 1; adjY <= y + 1; adjY++) {
-                        if (this.validCell(adjX, adjY) && this.minefield[adjX][adjY] !== true) {
-                            this.minefield[adjX][adjY]++;
-                        }
-                    }
+                for (const adjCell of this.cellBoard.adjacentCells(x, y)) {
+                    adjCell.adjacentMines += 1;
                 }
 
                 i++;
@@ -77,29 +95,25 @@ class Minefield {
     }
 
     selectCell(x, y) {
-        if (this.minefield === null) {
-            this.createMinefield(this.minefieldView.length, this.minefieldView[0].length, x, y, 20);
+        if (this.started === false) {
+            this.started = true;
+            this.setMines(x, y, 50)
         }
 
-        let selected = [{"x": x, "y": y}];
+        let selected = [this.cellBoard.getCell(x, y)];
 
-        let coords;
+        let cell;
         while (selected.length > 0) {
-            coords = selected.pop();
+            cell = selected.pop();
 
-            this.minefieldView[coords["x"]][coords["y"]] = true;
+            cell.visible = true;
 
             // Select adjacent cells if the current one
             // is not adjacent to a mine
-            if (this.minefield[coords["x"]][coords["y"]] === 0) {
-                for (let adjX = coords["x"] - 1; adjX <= coords["x"] + 1; adjX++) {
-                    for (let adjY = coords["y"] - 1; adjY <= coords["y"] + 1; adjY++) {
-                        if (this.validCell(adjX, adjY) &&
-                            this.minefieldView[adjX][adjY] === false &&
-                            this.minefield[adjX][adjY] !== true) {
-                            // console.log({"x": adjX, "y": adjY});
-                            selected.push({"x": adjX, "y": adjY});
-                        }
+            if (cell.adjacentMines === 0) {
+                for (const adjCell of this.cellBoard.adjacentCells(cell.x, cell.y)) {
+                    if (adjCell.visible === false && adjCell.mine === false) {
+                        selected.push(adjCell);
                     }
                 }
             }
@@ -109,24 +123,23 @@ class Minefield {
 
 let minefieldDisplay = null;
 
-const minefieldBoard = new Minefield();
-
-minefieldBoard.createMinefieldView(10, 10);
+const minefield = new Minefield();
 
 function updateMinefieldDisplay() {
-    for (let x = 0; x < minefieldBoard.width; x++) {
-        for (let y = 0; y < minefieldBoard.height; y++) {
-            if (minefieldBoard.minefieldView[x][y] === true) {
-                minefieldDisplay[x][y].textContent = minefieldBoard.minefield[x][y];
+    let text;
+    for (const cell of minefield.cellBoard) {
+        if (cell.visible === true) {
+            if (cell.mine === true) {
+                text = "Mine!";
+            } else {
+                text = cell.adjacentMines;
             }
+            minefieldDisplay[cell.x][cell.y].textContent = text;
         }
     }
 }
 
 function createMinefieldDisplay() {
-    if (minefieldBoard.width === 0) {
-        return;
-    }
     minefieldDisplay = [];
 
     let board = document.getElementById("board");
@@ -134,14 +147,14 @@ function createMinefieldDisplay() {
 
     let row;
     // Create cells
-    for (let x = 0; x < minefieldBoard.width; x++) {
+    for (let x = 0; x < minefield.cellBoard.width; x++) {
         row = [];
-        for (let y = 0; y < minefieldBoard.height; y++) {
+        for (let y = 0; y < minefield.cellBoard.height; y++) {
             cell = document.createElement("button");
             cell.textContent = "cell";
             cell.className = "cell";
             cell.onclick = function(){
-                minefieldBoard.selectCell(x, y);
+                minefield.selectCell(x, y);
                 updateMinefieldDisplay();
             };
 
