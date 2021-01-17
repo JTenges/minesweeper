@@ -119,6 +119,12 @@ class Minefield {
             }
         }
     }
+
+    flagCell(x, y) {
+        if (this.cellBoard.validPosition(x, y)) {
+            this.cellBoard.getCell(x, y).flagged = true;
+        }
+    }
 }
 
 let minefieldDisplay = null;
@@ -128,14 +134,17 @@ const minefield = new Minefield();
 function updateMinefieldDisplay() {
     let text;
     for (const cell of minefield.cellBoard) {
+        text = minefieldDisplay[cell.x][cell.y].textContent;
         if (cell.visible === true) {
             if (cell.mine === true) {
                 text = "Mine!";
             } else {
                 text = cell.adjacentMines;
             }
-            minefieldDisplay[cell.x][cell.y].textContent = text;
+        } else if (cell.flagged === true) {
+            text = "Flagged";
         }
+        minefieldDisplay[cell.x][cell.y].textContent = text;
     }
 }
 
@@ -156,6 +165,11 @@ function createMinefieldDisplay() {
             cell.onclick = function(){
                 minefield.selectCell(x, y);
                 updateMinefieldDisplay();
+            };
+            cell.oncontextmenu = function() {
+                minefield.flagCell(x, y);
+                updateMinefieldDisplay();
+                return false;
             };
 
             board.appendChild(cell);
