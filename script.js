@@ -68,9 +68,9 @@ class CellBoard {
 
 class Minefield {
     constructor() {
-        this.cellBoard = new CellBoard(20, 20);
+        this.cellBoard = new CellBoard(10, 10);
 
-        this.started = false;
+        this.gameState = "IDLE";
     }
 
     setMines(firstX, firstY, numMines) {
@@ -81,11 +81,11 @@ class Minefield {
         while (i < numMines) {
             x = Math.floor(Math.random() * this.cellBoard.width);
             y = Math.floor(Math.random() * this.cellBoard.height);
-            if (x !== firstX && y !== firstY) {
+            if (x !== firstX && y !== firstY && this.cellBoard.getCell(x, y).mine === false) {
                 this.cellBoard.getCell(x, y).mine = true;
 
                 // Increment adjacent cells' mine count
-                for (const adjCell of this.cellBoard.adjacentCells(x, y)) {
+                for (let adjCell of this.cellBoard.adjacentCells(x, y)) {
                     adjCell.adjacentMines += 1;
                 }
 
@@ -94,10 +94,14 @@ class Minefield {
         }
     }
 
+    setupGame(x, y) {
+        this.gameState = "RUNNING";
+        this.setMines(x, y, 20);
+    }
+
     selectCell(x, y) {
-        if (this.started === false) {
-            this.started = true;
-            this.setMines(x, y, 50)
+        if (this.gameState === "IDLE") {
+            this.setupGame(x, y);
         }
 
         let selected = [this.cellBoard.getCell(x, y)];
@@ -111,7 +115,7 @@ class Minefield {
             // Select adjacent cells if the current one
             // is not adjacent to a mine
             if (cell.adjacentMines === 0) {
-                for (const adjCell of this.cellBoard.adjacentCells(cell.x, cell.y)) {
+                for (let adjCell of this.cellBoard.adjacentCells(cell.x, cell.y)) {
                     if (adjCell.visible === false && adjCell.mine === false) {
                         selected.push(adjCell);
                     }
@@ -120,9 +124,38 @@ class Minefield {
         }
     }
 
-    flagCell(x, y) {
+    toggleFlag(x, y) {
+        if (this.gameState === "IDLE") {
+            this.setupGame(x, y);
+        }
+
         if (this.cellBoard.validPosition(x, y)) {
-            this.cellBoard.getCell(x, y).flagged = true;
+            let cell = this.cellBoard.getCell(x, y);
+
+            cell.flagged = !cell.flagged;
+        }
+    }
+
+    /**
+     * Checks for winning or losing game boards
+     */
+    updateGameState() {
+        let win = true;
+
+        for (let cell of this.cellBoard) {
+            if (cell.mine === true) {
+                if (cell.flagged === false) {
+                    win = false;
+                }
+                if (cell.visible === true) {
+                    this.gameState = "LOST";
+                    return;
+                }
+            }
+        }
+
+        if (win === true) {
+            this.gameState = "WIN";
         }
     }
 }
@@ -133,8 +166,8 @@ const minefield = new Minefield();
 
 function updateMinefieldDisplay() {
     let text;
-    for (const cell of minefield.cellBoard) {
-        text = minefieldDisplay[cell.x][cell.y].textContent;
+    for (let cell of minefield.cellBoard) {
+        text = "cell";
         if (cell.visible === true) {
             if (cell.mine === true) {
                 text = "Mine!";
@@ -145,6 +178,14 @@ function updateMinefieldDisplay() {
             text = "Flagged";
         }
         minefieldDisplay[cell.x][cell.y].textContent = text;
+    }
+
+    minefield.updateGameState();
+
+    if (minefield.gameState === "LOST") {
+        alert("LOST");
+    } else if (minefield.gameState === "WIN") {
+        alert("WIN");
     }
 }
 
@@ -167,7 +208,7 @@ function createMinefieldDisplay() {
                 updateMinefieldDisplay();
             };
             cell.oncontextmenu = function() {
-                minefield.flagCell(x, y);
+                minefield.toggleFlag(x, y);
                 updateMinefieldDisplay();
                 return false;
             };
