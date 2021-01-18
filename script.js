@@ -71,6 +71,7 @@ class Minefield {
         this.cellBoard = new CellBoard(10, 10);
         this.numMines = 20;
         this.numFlagged = 0;
+        this.displayNumFlagged = null;
 
         this.gameState = "IDLE";
     }
@@ -150,6 +151,10 @@ class Minefield {
                 this.numFlagged--;
             }
         }
+
+        if (this.displayNumFlagged !== null) {
+            this.displayNumFlagged(this.numFlagged);
+        }
     }
 
     /**
@@ -173,6 +178,15 @@ class Minefield {
         if (win === true && this.numFlagged === this.numMines) {
             this.gameState = "WIN";
         }
+    }
+
+    reset() {
+        for (let cell of this.cellBoard) {
+            cell.visible = false;
+            cell.flagged = false;
+        }
+
+        this.gameState = "IDLE";
     }
 }
 
@@ -200,9 +214,14 @@ function updateMinefieldDisplay() {
 
     if (minefield.gameState === "LOST") {
         alert("LOST");
+        minefield.reset();
+        updateMinefieldDisplay();
     } else if (minefield.gameState === "WIN") {
         alert("WIN");
+        minefield.reset();
+        updateMinefieldDisplay();
     }
+
 }
 
 function createMinefieldDisplay() {
@@ -238,6 +257,18 @@ function createMinefieldDisplay() {
         minefieldDisplay.push(row);
     }
 
+    let node;
+
+    // Set flagged count
+    node = document.getElementById("numFlagged");
+    node.textContent = "0";
+    minefield.displayNumFlagged = function (numFlagged) {
+        node.textContent = numFlagged.toString();
+    };
+
+    // Set mine count
+    node = document.getElementById("numMines");
+    node.textContent = minefield.numMines;
 }
 
 createMinefieldDisplay();
