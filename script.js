@@ -69,19 +69,23 @@ class CellBoard {
 class Minefield {
     constructor() {
         this.cellBoard = new CellBoard(10, 10);
+        this.numMines = 20;
 
         this.gameState = "IDLE";
     }
 
-    setMines(firstX, firstY, numMines) {
+    setMines(firstX, firstY) {
         // Create mines
         let i = 0;
         let x;
         let y;
-        while (i < numMines) {
+        while (i < this.numMines) {
             x = Math.floor(Math.random() * this.cellBoard.width);
             y = Math.floor(Math.random() * this.cellBoard.height);
-            if (x !== firstX && y !== firstY && this.cellBoard.getCell(x, y).mine === false) {
+            if (!((x >= firstX - 2 && x <= firstX + 2) && (y >= firstY - 2 && y <= firstY + 2)) &&
+                this.cellBoard.getCell(x, y).mine === false
+            ) {
+
                 this.cellBoard.getCell(x, y).mine = true;
 
                 // Increment adjacent cells' mine count
@@ -96,17 +100,23 @@ class Minefield {
 
     setupGame(x, y) {
         this.gameState = "RUNNING";
-        this.setMines(x, y, 20);
+        this.setMines(x, y);
     }
 
     selectCell(x, y) {
         if (this.gameState === "IDLE") {
             this.setupGame(x, y);
         }
-
-        let selected = [this.cellBoard.getCell(x, y)];
-
         let cell;
+
+        cell = this.cellBoard.getCell(x, y);
+
+        if (cell.flagged === true) {
+            return;
+        }
+
+        let selected = [cell];
+
         while (selected.length > 0) {
             cell = selected.pop();
 
