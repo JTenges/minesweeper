@@ -70,6 +70,7 @@ class Minefield {
     constructor() {
         this.cellBoard = new CellBoard(10, 10);
         this.numMines = 20;
+        this.numFlagged = 0;
 
         this.gameState = "IDLE";
     }
@@ -143,6 +144,11 @@ class Minefield {
             let cell = this.cellBoard.getCell(x, y);
 
             cell.flagged = !cell.flagged;
+            if (cell.flagged === true) {
+                this.numFlagged++;
+            } else {
+                this.numFlagged--;
+            }
         }
     }
 
@@ -164,7 +170,7 @@ class Minefield {
             }
         }
 
-        if (win === true) {
+        if (win === true && this.numFlagged === this.numMines) {
             this.gameState = "WIN";
         }
     }
