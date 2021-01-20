@@ -257,18 +257,17 @@ function createMinefieldDisplay() {
         minefieldDisplay.push(row);
     }
 
-    let node;
 
     // Set flagged count
-    node = document.getElementById("numFlagged");
-    node.textContent = "0";
+    const numFlaggedNode = document.getElementById("numFlagged");
+    numFlaggedNode.textContent = "0";
     minefield.displayNumFlagged = function (numFlagged) {
-        node.textContent = numFlagged.toString();
+        numFlaggedNode.textContent = numFlagged.toString();
     };
 
     // Set mine count
-    node = document.getElementById("numMines");
-    node.textContent = minefield.numMines;
+    const numMinesNode = document.getElementById("numMines");
+    numMinesNode.textContent = minefield.numMines;
 }
 
 createMinefieldDisplay();
