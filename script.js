@@ -10,6 +10,13 @@ class Cell {
         this.visible = false;
         this.flagged = false;
     }
+
+    reset() {
+        this.mine = false;
+        this.adjacentMines = 0;
+        this.visible = false;
+        this.flagged = false;
+    }
 }
 
 class CellBoard {
@@ -182,11 +189,11 @@ class Minefield {
 
     reset() {
         for (let cell of this.cellBoard) {
-            cell.visible = false;
-            cell.flagged = false;
+            cell.reset();
         }
 
         this.gameState = "IDLE";
+        this.numFlagged = 0;
     }
 }
 
@@ -197,15 +204,23 @@ const minefield = new Minefield();
 function updateMinefieldDisplay() {
     let text;
     for (let cell of minefield.cellBoard) {
-        text = "cell";
+        text = "";
         if (cell.visible === true) {
             if (cell.mine === true) {
                 text = "Mine!";
             } else {
-                text = cell.adjacentMines;
+                if (cell.adjacentMines === 0) {
+                    text = " ";
+                } else {
+                    text = cell.adjacentMines;
+                }
+                minefieldDisplay[cell.x][cell.y].classList.add("selected");
             }
-        } else if (cell.flagged === true) {
-            text = "Flagged";
+        } else {
+            if (cell.flagged === true) {
+                text = "Flagged";
+            }
+            minefieldDisplay[cell.x][cell.y].classList.remove("selected");
         }
         minefieldDisplay[cell.x][cell.y].textContent = text;
     }
@@ -231,12 +246,14 @@ function createMinefieldDisplay() {
     let cell;
 
     let row;
+    let rowDiv;
     // Create cells
     for (let x = 0; x < minefield.cellBoard.width; x++) {
         row = [];
+        rowDiv = document.createElement("div");
+        rowDiv.classList.add("row");
         for (let y = 0; y < minefield.cellBoard.height; y++) {
             cell = document.createElement("button");
-            cell.textContent = "cell";
             cell.className = "cell";
             cell.onclick = function(){
                 minefield.selectCell(x, y);
@@ -248,11 +265,14 @@ function createMinefieldDisplay() {
                 return false;
             };
 
-            board.appendChild(cell);
+            // board.appendChild(cell);
+            cell.classList.add("col");
+            rowDiv.appendChild(cell);
 
             row.push(cell);
         }
-        board.appendChild(document.createElement("br"));
+        // board.appendChild(document.createElement("br"));
+        board.appendChild(rowDiv);
 
         minefieldDisplay.push(row);
     }
