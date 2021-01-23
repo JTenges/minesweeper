@@ -1,5 +1,10 @@
 // Logic for minesweeper
 
+let flagImg = document.createElement("img");
+flagImg.src = "flags.svg";
+flagImg.alt = "Flagged";
+flagImg.id = "flag";
+
 class Cell {
     constructor(x, y) {
         this.x = x;
@@ -218,11 +223,16 @@ function updateMinefieldDisplay() {
             }
         } else {
             if (cell.flagged === true) {
-                text = "Flagged";
+                text = " ";
+
             }
             minefieldDisplay[cell.x][cell.y].classList.remove("selected");
         }
         minefieldDisplay[cell.x][cell.y].textContent = text;
+
+        if (cell.flagged === true) {
+            minefieldDisplay[cell.x][cell.y].appendChild(flagImg.cloneNode());
+        }
     }
 
     minefield.updateGameState();
