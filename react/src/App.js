@@ -4,6 +4,11 @@ import {useState} from 'react';
 import FlagIcon from '@material-ui/icons/Flag';
 import {Close} from '@material-ui/icons';
 
+const BOARD_HEIGHT = 20;
+const BOARD_WIDTH = 20;
+
+const NUM_MINES = 40;
+
 const CellState = {
   HIDDEN: {
     revealCell: () => CellState.REVEALED,
@@ -28,6 +33,8 @@ function Cell(props) {
       className += " Cell-revealed";
       if (props.isMined) {
         content = <Close/>
+      } else if (props.adjMines !== null && props.adjMines > 0) {
+        content = props.adjMines;
       }
       break;
     case CellState.FLAGGED:
@@ -51,11 +58,6 @@ function Cell(props) {
 }
 
 function App() {
-  const BOARD_HEIGHT = 10;
-  const BOARD_WIDTH = 10;
-
-  const NUM_MINES = 20;
-
   // Create state
   const [board, setBoard] = useState(
     Array(BOARD_HEIGHT * BOARD_WIDTH)
@@ -65,11 +67,14 @@ function App() {
   // Create mines
   const [mineBoard] = useState(makeMines(board, NUM_MINES));
 
+  // Create blank proximity board
+  const [proxBoard, setProxBoard] = useState(Array(board.length).fill(null));
+
   // Select a cell
-  const setCellState = (idx, cellState) => {
+  const setCellState = (idx, cellState, callback) => {
     const boardCpy = board.slice();
     boardCpy[idx] = cellState;
-    setBoard(boardCpy);
+    setBoard(boardCpy, callback);
   };
 
   const toggleFlag = (idx) => {
@@ -77,7 +82,10 @@ function App() {
   }
 
   const revealCell = (idx) => {
-    setCellState(idx, board[idx].revealCell())
+    // setCellState(idx, board[idx].revealCell());
+    const [newBoard, newProxBoard] = selectCell(board, BOARD_WIDTH, mineBoard, proxBoard, idx);
+    setBoard(newBoard);
+    setProxBoard(newProxBoard);
   }
 
   // Make board cells
@@ -93,7 +101,8 @@ function App() {
           cellState={board[cellIdx]}
           handleClick={() => revealCell(cellIdx)}
           handleRightClick={() => toggleFlag(cellIdx)}
-          isMined={mineBoard[cellIdx]}/>);
+          isMined={mineBoard[cellIdx]}
+          adjMines={proxBoard[cellIdx]}/>);
       });
 
     rows.push(
@@ -151,6 +160,70 @@ function makeMines(board, numMines) {
   mineIdxs.forEach(idx => mineBoard[idx] = true);
 
   return mineBoard;
+}
+
+const getAdjacent = (board, boardWidth, idx) => {
+  let adj = [];
+  if (idx % boardWidth !== 0) {
+    // Not on left edge
+    adj.push(idx - boardWidth - 1,
+      idx - 1,
+      idx + boardWidth - 1);
+  }
+
+  if ((idx + 1) % boardWidth !== 0) {
+    // Not on right edge
+    adj.push(idx - boardWidth + 1,
+      idx + 1,
+      idx + boardWidth + 1);
+  }
+
+  // Directly above and below
+  adj.push(idx - boardWidth, idx + boardWidth);
+
+  // Remove indices that are in a row before or after that don't exist
+  adj = adj.filter(adjIdx => (adjIdx >= 0 && adjIdx < board.length))
+
+  return adj;
+}
+
+function getNumMines(mineBoard: Array<boolean>, idxs: Array<Number>) {
+  let mines = 0;
+  idxs.forEach(
+    (idx) => (mineBoard[idx] === true) ? mines += 1: null
+  );
+
+  return mines;
+}
+
+function selectCell(board, boardWidth, mineBoard, proxBoard, idx) {
+  const boardCpy = board.slice();
+  const proxBoardCpy = proxBoard.slice();
+
+  let cellIdx;
+  let adjMines;
+  let adjIdxs;
+  const cells = [idx];
+  while (cells.length > 0) {
+    cellIdx = cells.pop();
+    boardCpy[cellIdx] = CellState.REVEALED;
+
+    adjIdxs = getAdjacent(board, boardWidth, cellIdx);
+    adjMines = getNumMines(mineBoard, adjIdxs);
+
+    proxBoardCpy[cellIdx] = adjMines;
+
+    if (adjMines === 0) {
+      // Select adjacent cells
+      for (let adjIdx of adjIdxs) {
+        if (boardCpy[adjIdx] !== CellState.REVEALED && mineBoard[adjIdx] === false) {
+          cells.push(adjIdx);
+        }
+      }
+    }
+  }
+
+  return [boardCpy, proxBoardCpy];
 }
 
 export default App;
