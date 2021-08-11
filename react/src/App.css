@@ -42,7 +42,11 @@
   flex-wrap: nowrap;
 }
 
-.cell {
+.Cell {
   width: 4rem;
   height: 4rem;
+}
+
+.Cell-revealed {
+  background-color: dodgerblue;
 }
