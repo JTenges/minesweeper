@@ -43,10 +43,14 @@
 }
 
 .Cell {
+  all: unset;
   width: 4rem;
   height: 4rem;
+  border-radius: 0;
+  border: 1px solid black;
+  background-color: darkgray;
 }
 
 .Cell-revealed {
-  background-color: dodgerblue;
+  background-color: lightgray;
 }
