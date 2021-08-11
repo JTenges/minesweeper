@@ -2,6 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import {useState} from 'react';
 import FlagIcon from '@material-ui/icons/Flag';
+import {Close} from '@material-ui/icons';
 
 const CellState = {
   HIDDEN: {
@@ -25,6 +26,9 @@ function Cell(props) {
   switch (props.cellState) {
     case CellState.REVEALED:
       className += " Cell-revealed";
+      if (props.isMined) {
+        content = <Close/>
+      }
       break;
     case CellState.FLAGGED:
       content = <FlagIcon/>;
@@ -49,11 +53,17 @@ function Cell(props) {
 function App() {
   const BOARD_HEIGHT = 10;
   const BOARD_WIDTH = 10;
+
+  const NUM_MINES = 20;
+
   // Create state
   const [board, setBoard] = useState(
     Array(BOARD_HEIGHT * BOARD_WIDTH)
       .fill(CellState.HIDDEN)
   );
+
+  // Create mines
+  const [mineBoard] = useState(makeMines(board, NUM_MINES));
 
   // Select a cell
   const setCellState = (idx, cellState) => {
@@ -82,7 +92,8 @@ function App() {
           key={cellIdx}
           cellState={board[cellIdx]}
           handleClick={() => revealCell(cellIdx)}
-          handleRightClick={() => toggleFlag(cellIdx)}/>);
+          handleRightClick={() => toggleFlag(cellIdx)}
+          isMined={mineBoard[cellIdx]}/>);
       });
 
     rows.push(
@@ -102,6 +113,44 @@ function App() {
       </header>
     </div>
   );
+}
+
+// From https://stackoverflow.com/a/2450976
+function shuffle(array) {
+  let currentIndex = array.length;
+  let randomIndex;
+
+  let shuffled = array.slice();
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [shuffled[currentIndex], shuffled[randomIndex]] = [
+      shuffled[randomIndex], shuffled[currentIndex]];
+  }
+
+  return shuffled;
+}
+
+function makeMines(board, numMines) {
+  const numSeq = Array(board.length)
+    .fill()
+    .map((element, index) => index);
+
+  const mineIdxs = shuffle(numSeq)
+    .slice(0, numMines);
+
+  const mineBoard = Array(board.length)
+    .fill(false);
+
+  mineIdxs.forEach(idx => mineBoard[idx] = true);
+
+  return mineBoard;
 }
 
 export default App;
