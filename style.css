@@ -1,0 +1,21 @@
+.cell {
+    height: 7rem;
+}
+
+.selected {
+    background-color: darkgray;
+}
+
+.btn-container {
+    padding-top: 100%;
+    width: 100%;
+}
+
+footer {
+    height: 10rem;
+}
+
+#flag {
+    height: 1rem;
+    width: 1rem;
+}
