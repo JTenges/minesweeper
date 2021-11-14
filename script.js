@@ -226,7 +226,7 @@ function updateMinefieldDisplay() {
     }
     minefieldDisplay[cell.x][cell.y].textContent = text;
 
-    if (cell.flagged === true) {
+    if (cell.flagged === true && cell.visible === false) {
       let flagIcon = document.createElement("span");
       flagIcon.classList.add("material-icons");
       flagIcon.innerHTML = "flag";
